@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', function () {
     height: '100%',
     expandRows: true,
     fixedWeekCount: true,
-    headerToolbar: false // hide default buttons
+    headerToolbar: false
   });
   calendar.render();
 
@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', function () {
     canvas.height = canvas.clientHeight * dpr;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.scale(dpr, dpr);
-    loadCanvas(); // reload saved notes after resizing
+    loadCanvas();
   }
   window.addEventListener('resize', resizeCanvas);
   resizeCanvas();
@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', function () {
   let penSize = 2;
   let erasing = false;
 
-  // Sidebar color buttons
+  // Sidebar tools
   document.getElementById('color1').onclick = () => setPen('red');
   document.getElementById('color2').onclick = () => setPen('blue');
   document.getElementById('color3').onclick = () => setPen('green');
@@ -55,7 +55,6 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function getStorageKey() {
-    // Save per month (e.g., "calendarDrawing-2025-08")
     const date = calendar.getDate();
     return 'calendarDrawing-' + date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0');
   }
@@ -111,7 +110,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!drawing) return;
     drawing = false;
     ctx.closePath();
-    saveCanvas(); // auto-save when you finish drawing
+    saveCanvas(); // save when you finish drawing
   }
 
   function getX(e) {
@@ -123,4 +122,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const rect = canvas.getBoundingClientRect();
     return e.clientY - rect.top;
   }
+
+  // Initial load
+  loadCanvas();
 });
