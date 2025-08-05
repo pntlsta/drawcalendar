@@ -27,27 +27,14 @@ document.addEventListener('DOMContentLoaded', function () {
   let penColor = 'black';
   let penSize = 2;
 
-  // Desktop mouse events
-  canvas.addEventListener('mousedown', startDraw);
-  canvas.addEventListener('mousemove', draw);
-  canvas.addEventListener('mouseup', stopDraw);
-  canvas.addEventListener('mouseleave', stopDraw);
+  // Disable touch gestures (like pinch/zoom) on iPad
+  canvas.style.touchAction = 'none';
 
-  // iPad / touch events (with preventDefault to stop scrolling)
-  canvas.addEventListener('touchstart', (e) => {
-    e.preventDefault();
-    startDraw(e);
-  }, { passive: false });
-
-  canvas.addEventListener('touchmove', (e) => {
-    e.preventDefault();
-    draw(e);
-  }, { passive: false });
-
-  canvas.addEventListener('touchend', (e) => {
-    e.preventDefault();
-    stopDraw(e);
-  }, { passive: false });
+  // Use pointer events (works with mouse, touch, and Apple Pencil)
+  canvas.addEventListener('pointerdown', startDraw);
+  canvas.addEventListener('pointermove', draw);
+  canvas.addEventListener('pointerup', stopDraw);
+  canvas.addEventListener('pointercancel', stopDraw);
 
   function startDraw(e) {
     drawing = true;
@@ -71,11 +58,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function getX(e) {
     const rect = canvas.getBoundingClientRect();
-    return (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+    return e.clientX - rect.left;
   }
 
   function getY(e) {
     const rect = canvas.getBoundingClientRect();
-    return (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+    return e.clientY - rect.top;
   }
 });
