@@ -9,22 +9,21 @@ document.addEventListener('DOMContentLoaded', function () {
   });
   calendar.render();
 
-  // Sidebar month navigation
   document.getElementById('prevMonth').onclick = () => { calendar.prev(); loadCanvas(); };
   document.getElementById('nextMonth').onclick = () => { calendar.next(); loadCanvas(); };
 
   const canvas = document.getElementById('drawCanvas');
   const ctx = canvas.getContext('2d');
+  let dpr = window.devicePixelRatio || 1;
 
   function resizeCanvas() {
-    const dpr = window.devicePixelRatio || 1;
+    dpr = window.devicePixelRatio || 1;
     canvas.width = canvas.clientWidth * dpr;
     canvas.height = canvas.clientHeight * dpr;
     ctx.setTransform(1, 0, 0, 1, 0, 0); // reset
     ctx.scale(dpr, dpr);
     loadCanvas();
   }
-
   window.addEventListener('resize', resizeCanvas);
   resizeCanvas();
 
@@ -62,6 +61,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function saveCanvas() {
     try {
+      // Save at full DPR resolution
       localStorage.setItem(getStorageKey(), canvas.toDataURL());
     } catch (e) {
       console.warn("Could not save canvas:", e);
@@ -73,11 +73,11 @@ document.addEventListener('DOMContentLoaded', function () {
     if (dataURL) {
       const img = new Image();
       img.onload = function () {
-        ctx.setTransform(1, 0, 0, 1, 0, 0); // reset scale before drawing
+        ctx.setTransform(1, 0, 0, 1, 0, 0); // reset scale
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        // draw image in full resolution
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        // reapply scaling for future drawing
-        const dpr = window.devicePixelRatio || 1;
+        // restore DPR scaling for new strokes
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       };
       img.src = dataURL;
@@ -87,7 +87,9 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function clearCanvas() {
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     localStorage.removeItem(getStorageKey());
   }
 
@@ -115,20 +117,18 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!drawing) return;
     drawing = false;
     ctx.closePath();
-    saveCanvas(); // save when you finish drawing
+    saveCanvas();
   }
 
   function getX(e) {
     const rect = canvas.getBoundingClientRect();
-    return e.clientX - rect.left;
+    return (e.clientX - rect.left) * dpr;
   }
 
   function getY(e) {
     const rect = canvas.getBoundingClientRect();
-    return e.clientY - rect.top;
+    return (e.clientY - rect.top) * dpr;
   }
 
-  // Initial load
-  loadCanvas();
+  loadCanvas(); // initial load
 });
-
