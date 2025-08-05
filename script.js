@@ -20,10 +20,11 @@ document.addEventListener('DOMContentLoaded', function () {
     const dpr = window.devicePixelRatio || 1;
     canvas.width = canvas.clientWidth * dpr;
     canvas.height = canvas.clientHeight * dpr;
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.setTransform(1, 0, 0, 1, 0, 0); // reset
     ctx.scale(dpr, dpr);
     loadCanvas();
   }
+
   window.addEventListener('resize', resizeCanvas);
   resizeCanvas();
 
@@ -72,8 +73,12 @@ document.addEventListener('DOMContentLoaded', function () {
     if (dataURL) {
       const img = new Image();
       img.onload = function () {
+        ctx.setTransform(1, 0, 0, 1, 0, 0); // reset scale before drawing
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        // reapply scaling for future drawing
+        const dpr = window.devicePixelRatio || 1;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       };
       img.src = dataURL;
     } else {
@@ -126,3 +131,4 @@ document.addEventListener('DOMContentLoaded', function () {
   // Initial load
   loadCanvas();
 });
+
