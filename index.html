@@ -74,6 +74,8 @@
 <body>
   <div id="app">
     <div id="sidebar">
+      <button id="prevMonth" style="background:#ddd;">⬅ Prev</button>
+      <button id="nextMonth" style="background:#ddd;">Next ➡</button>
       <button id="color1" style="background:red;"></button>
       <button id="color2" style="background:blue;"></button>
       <button id="color3" style="background:green;"></button>
@@ -98,13 +100,13 @@
         height: '100%',
         expandRows: true,
         fixedWeekCount: true,
-        headerToolbar: {
-          left: 'prev,next',
-          center: 'title',
-          right: ''
-        }
+        headerToolbar: false // hide default buttons
       });
       calendar.render();
+
+      // Sidebar month navigation
+      document.getElementById('prevMonth').onclick = () => calendar.prev();
+      document.getElementById('nextMonth').onclick = () => calendar.next();
 
       const canvas = document.getElementById('drawCanvas');
       const ctx = canvas.getContext('2d');
@@ -126,7 +128,7 @@
       let penSize = 2;
       let erasing = false;
 
-      // Sidebar buttons
+      // Sidebar color buttons
       document.getElementById('color1').onclick = () => setPen('red');
       document.getElementById('color2').onclick = () => setPen('blue');
       document.getElementById('color3').onclick = () => setPen('green');
