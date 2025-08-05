@@ -121,14 +121,15 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function getX(e) {
-    const rect = canvas.getBoundingClientRect();
-    return (e.clientX - rect.left) * dpr;
-  }
+  const rect = canvas.getBoundingClientRect();
+  return e.clientX - rect.left;
+}
 
-  function getY(e) {
-    const rect = canvas.getBoundingClientRect();
-    return (e.clientY - rect.top) * dpr;
-  }
+function getY(e) {
+  const rect = canvas.getBoundingClientRect();
+  return e.clientY - rect.top;
+}
 
   loadCanvas(); // initial load
 });
+
