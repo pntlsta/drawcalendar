@@ -15,6 +15,12 @@
       font-family: Arial, sans-serif;
     }
 
+    body, #app, #calendarContainer, #drawCanvas {
+  -webkit-user-select: none; /* prevent text selection in Safari */
+  -webkit-touch-callout: none; /* prevent long-press popup */
+  user-select: none; /* standard */
+}
+
     #app {
       display: flex;
       height: 100vh;
@@ -91,3 +97,4 @@
   <script src="script.js"></script>
 </body>
 </html>
+
