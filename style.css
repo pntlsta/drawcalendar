@@ -28,3 +28,25 @@ html, body {
   z-index: 9999; /* 🔥 this makes sure canvas is on top */
 }
 
+#toolbar {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 10000;
+  display: flex;
+  gap: 10px;
+}
+
+#toolbar button {
+  padding: 8px 12px;
+  font-size: 16px;
+  border: none;
+  border-radius: 8px;
+  background: #f0f0f0;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+#toolbar button:hover {
+  background: #ddd;
+}
