@@ -18,9 +18,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function resizeCanvas() {
     dpr = window.devicePixelRatio || 1;
-    canvas.width = canvas.clientWidth * dpr;
-    canvas.height = canvas.clientHeight * dpr;
-    ctx.setTransform(1, 0, 0, 1, 0, 0); // always keep reset
+    // make the canvas bitmap match DPR
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    canvas.style.width = rect.width + "px";
+    canvas.style.height = rect.height + "px";
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.scale(dpr, dpr);
     loadCanvas();
   }
   window.addEventListener('resize', resizeCanvas);
@@ -71,8 +76,10 @@ document.addEventListener('DOMContentLoaded', function () {
     if (dataURL) {
       const img = new Image();
       img.onload = function () {
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       };
       img.src = dataURL;
     } else {
@@ -81,7 +88,9 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function clearCanvas() {
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     localStorage.removeItem(getStorageKey());
   }
 
@@ -112,16 +121,15 @@ document.addEventListener('DOMContentLoaded', function () {
     saveCanvas();
   }
 
-  // ✅ Coordinates scaled manually by DPR
   function getX(e) {
     const rect = canvas.getBoundingClientRect();
-    return (e.clientX - rect.left) * dpr;
+    return (e.clientX - rect.left);
   }
 
   function getY(e) {
     const rect = canvas.getBoundingClientRect();
-    return (e.clientY - rect.top) * dpr;
+    return (e.clientY - rect.top);
   }
 
-  loadCanvas(); // initial load
+  loadCanvas();
 });
