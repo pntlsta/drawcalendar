@@ -186,7 +186,11 @@
         const rect = canvas.getBoundingClientRect();
         return e.clientY - rect.top;
       }
+
+      document.getElementById('prevMonth').onclick = () => { calendar.prev(); loadCanvas(); };
+document.getElementById('nextMonth').onclick = () => { calendar.next(); loadCanvas(); };
     });
   </script>
 </body>
 </html>
+
