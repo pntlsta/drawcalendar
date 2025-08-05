@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
   const calendarEl = document.getElementById('calendar');
 
   // FullCalendar setup
@@ -21,19 +21,33 @@ document.addEventListener('DOMContentLoaded', function() {
     canvas.height = canvas.offsetHeight;
   }
   window.addEventListener('resize', resizeCanvas);
-  resizeCanvas();
+  resizeCanvas(); // call AFTER calendar renders
 
   let drawing = false;
   let penColor = 'black';
   let penSize = 2;
 
+  // Desktop mouse events
   canvas.addEventListener('mousedown', startDraw);
-  canvas.addEventListener('touchstart', startDraw);
   canvas.addEventListener('mousemove', draw);
-  canvas.addEventListener('touchmove', draw);
   canvas.addEventListener('mouseup', stopDraw);
   canvas.addEventListener('mouseleave', stopDraw);
-  canvas.addEventListener('touchend', stopDraw);
+
+  // iPad / touch events (with preventDefault to stop scrolling)
+  canvas.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    startDraw(e);
+  }, { passive: false });
+
+  canvas.addEventListener('touchmove', (e) => {
+    e.preventDefault();
+    draw(e);
+  }, { passive: false });
+
+  canvas.addEventListener('touchend', (e) => {
+    e.preventDefault();
+    stopDraw(e);
+  }, { passive: false });
 
   function startDraw(e) {
     drawing = true;
@@ -56,9 +70,12 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   function getX(e) {
-    return e.touches ? e.touches[0].clientX - canvas.getBoundingClientRect().left : e.clientX - canvas.getBoundingClientRect().left;
+    const rect = canvas.getBoundingClientRect();
+    return (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
   }
+
   function getY(e) {
-    return e.touches ? e.touches[0].clientY - canvas.getBoundingClientRect().top : e.clientY - canvas.getBoundingClientRect().top;
+    const rect = canvas.getBoundingClientRect();
+    return (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
   }
 });
