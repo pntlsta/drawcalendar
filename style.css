@@ -18,7 +18,6 @@ html, body {
   width: 100%;
   background: white;
 }
-
 #drawCanvas {
   position: absolute;
   top: 0;
@@ -26,4 +25,6 @@ html, body {
   width: 100%;
   height: 100%;
   cursor: crosshair;
+  z-index: 9999; /* 🔥 this makes sure canvas is on top */
 }
+
