@@ -7,33 +7,31 @@ document.addEventListener('DOMContentLoaded', function () {
     height: '100%',
     expandRows: true,
     fixedWeekCount: true,
-    headerToolbar: false // remove header buttons (today/next/prev)
+    headerToolbar: false
   });
 
   calendar.render();
 
-  // Drawing setup
   const canvas = document.getElementById('drawCanvas');
   const ctx = canvas.getContext('2d');
 
   function resizeCanvas() {
-  canvas.width = canvas.clientWidth * window.devicePixelRatio;
-  canvas.height = canvas.clientHeight * window.devicePixelRatio;
-  canvas.style.width = canvas.clientWidth + "px";
-  canvas.style.height = canvas.clientHeight + "px";
-  ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
-}
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = canvas.clientWidth * dpr;
+    canvas.height = canvas.clientHeight * dpr;
+    ctx.setTransform(1, 0, 0, 1, 0, 0); // reset scale
+    ctx.scale(dpr, dpr);
+  }
+
   window.addEventListener('resize', resizeCanvas);
-  resizeCanvas(); // call AFTER calendar renders
+  resizeCanvas();
+
+  canvas.style.touchAction = 'none';
 
   let drawing = false;
   let penColor = 'black';
   let penSize = 2;
 
-  // Disable touch gestures (like pinch/zoom) on iPad
-  canvas.style.touchAction = 'none';
-
-  // Use pointer events (works with mouse, touch, and Apple Pencil)
   canvas.addEventListener('pointerdown', startDraw);
   canvas.addEventListener('pointermove', draw);
   canvas.addEventListener('pointerup', stopDraw);
@@ -69,4 +67,3 @@ document.addEventListener('DOMContentLoaded', function () {
     return e.clientY - rect.top;
   }
 });
-
