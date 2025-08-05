@@ -4,21 +4,187 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Write-on Calendar</title>
-  <link rel="stylesheet" href="style.css">
-  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css">
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+    }
+
+    #app {
+      display: flex;
+      height: 100vh;
+      width: 100vw;
+    }
+
+    /* Sidebar */
+    #sidebar {
+      width: 10%;
+      background: #f4f4f4;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 10px;
+      gap: 15px;
+      box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+      z-index: 1000;
+    }
+
+    #sidebar button {
+      width: 80%;
+      height: 40px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    #sidebar button:hover {
+      opacity: 0.8;
+    }
+
+    /* Calendar and Canvas */
+    #calendarContainer {
+      position: relative;
+      width: 90%;
+      height: 100%;
+    }
+
+    #calendar {
+      height: 100%;
+      width: 100%;
+      background: white;
+    }
+
+    #drawCanvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      cursor: crosshair;
+      z-index: 999;
+    }
+  </style>
 </head>
 <body>
-  <div id="calendarContainer">
-    <div id="calendar"></div>
-    <canvas id="drawCanvas"></canvas>
+  <div id="app">
+    <div id="sidebar">
+      <button id="color1" style="background:red;"></button>
+      <button id="color2" style="background:blue;"></button>
+      <button id="color3" style="background:green;"></button>
+      <button id="color4" style="background:orange;"></button>
+      <button id="color5" style="background:purple;"></button>
+      <button id="eraser" style="background:white; border:1px solid #ccc;">Eraser</button>
+      <button id="clearAll" style="background:black; color:white;">Clear Page</button>
+    </div>
+
+    <div id="calendarContainer">
+      <div id="calendar"></div>
+      <canvas id="drawCanvas"></canvas>
+    </div>
   </div>
 
-  <div id="toolbar">
-  <button id="penBtn">✏️ Pen</button>
-  <button id="eraserBtn">🩹 Eraser</button>
-</div>
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const calendarEl = document.getElementById('calendar');
+      const calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        height: '100%',
+        expandRows: true,
+        fixedWeekCount: true,
+        headerToolbar: {
+          left: 'prev,next',
+          center: 'title',
+          right: ''
+        }
+      });
+      calendar.render();
 
-  <script src="script.js"></script>
+      const canvas = document.getElementById('drawCanvas');
+      const ctx = canvas.getContext('2d');
+
+      function resizeCanvas() {
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = canvas.clientWidth * dpr;
+        canvas.height = canvas.clientHeight * dpr;
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.scale(dpr, dpr);
+      }
+      window.addEventListener('resize', resizeCanvas);
+      resizeCanvas();
+
+      canvas.style.touchAction = 'none';
+
+      let drawing = false;
+      let penColor = 'black';
+      let penSize = 2;
+      let erasing = false;
+
+      // Sidebar buttons
+      document.getElementById('color1').onclick = () => setPen('red');
+      document.getElementById('color2').onclick = () => setPen('blue');
+      document.getElementById('color3').onclick = () => setPen('green');
+      document.getElementById('color4').onclick = () => setPen('orange');
+      document.getElementById('color5').onclick = () => setPen('purple');
+      document.getElementById('eraser').onclick = () => setEraser();
+      document.getElementById('clearAll').onclick = () => clearCanvas();
+
+      function setPen(color) {
+        erasing = false;
+        ctx.globalCompositeOperation = 'source-over';
+        penColor = color;
+      }
+
+      function setEraser() {
+        erasing = true;
+        ctx.globalCompositeOperation = 'destination-out';
+      }
+
+      function clearCanvas() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+
+      canvas.addEventListener('pointerdown', (e) => {
+        if (e.pointerType === 'pen' && e.pressure === 0) return;
+        drawing = true;
+        ctx.beginPath();
+        ctx.moveTo(getX(e), getY(e));
+      });
+
+      canvas.addEventListener('pointermove', (e) => {
+        if (!drawing) return;
+        if (e.pointerType === 'pen' && e.pressure === 0) return;
+        ctx.lineWidth = erasing ? penSize * 8 : penSize * (e.pressure > 0 ? e.pressure * 2 : 1);
+        ctx.lineCap = 'round';
+        ctx.strokeStyle = erasing ? 'rgba(0,0,0,1)' : penColor;
+        ctx.lineTo(getX(e), getY(e));
+        ctx.stroke();
+      });
+
+      canvas.addEventListener('pointerup', stopDraw);
+      canvas.addEventListener('pointercancel', stopDraw);
+
+      function stopDraw() {
+        drawing = false;
+        ctx.closePath();
+      }
+
+      function getX(e) {
+        const rect = canvas.getBoundingClientRect();
+        return e.clientX - rect.left;
+      }
+
+      function getY(e) {
+        const rect = canvas.getBoundingClientRect();
+        return e.clientY - rect.top;
+      }
+    });
+  </script>
 </body>
 </html>
-
