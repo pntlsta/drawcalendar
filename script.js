@@ -17,9 +17,12 @@ document.addEventListener('DOMContentLoaded', function () {
   const ctx = canvas.getContext('2d');
 
   function resizeCanvas() {
-    canvas.width = canvas.offsetWidth;
-    canvas.height = canvas.offsetHeight;
-  }
+  canvas.width = canvas.clientWidth * window.devicePixelRatio;
+  canvas.height = canvas.clientHeight * window.devicePixelRatio;
+  canvas.style.width = canvas.clientWidth + "px";
+  canvas.style.height = canvas.clientHeight + "px";
+  ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+}
   window.addEventListener('resize', resizeCanvas);
   resizeCanvas(); // call AFTER calendar renders
 
@@ -66,3 +69,4 @@ document.addEventListener('DOMContentLoaded', function () {
     return e.clientY - rect.top;
   }
 });
+
