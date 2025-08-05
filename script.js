@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', function () {
   });
   calendar.render();
 
+  // Sidebar month navigation
   document.getElementById('prevMonth').onclick = () => { calendar.prev(); loadCanvas(); };
   document.getElementById('nextMonth').onclick = () => { calendar.next(); loadCanvas(); };
 
@@ -18,7 +19,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function resizeCanvas() {
     dpr = window.devicePixelRatio || 1;
-    // make the canvas bitmap match DPR
     const rect = canvas.getBoundingClientRect();
     canvas.width = rect.width * dpr;
     canvas.height = rect.height * dpr;
@@ -94,14 +94,17 @@ document.addEventListener('DOMContentLoaded', function () {
     localStorage.removeItem(getStorageKey());
   }
 
+  // Drawing events with preventDefault
   canvas.addEventListener('pointerdown', (e) => {
+    e.preventDefault(); // 🔥 stop Safari highlight / menu
     if (e.pointerType === 'pen' && e.pressure === 0) return;
     drawing = true;
     ctx.beginPath();
     ctx.moveTo(getX(e), getY(e));
-  });
+  }, { passive: false });
 
   canvas.addEventListener('pointermove', (e) => {
+    e.preventDefault(); // 🔥 block scroll/zoom
     if (!drawing) return;
     if (e.pointerType === 'pen' && e.pressure === 0) return;
     ctx.lineWidth = erasing ? penSize * 8 : penSize * (e.pressure > 0 ? e.pressure * 2 : 1);
@@ -109,10 +112,17 @@ document.addEventListener('DOMContentLoaded', function () {
     ctx.strokeStyle = erasing ? 'rgba(0,0,0,1)' : penColor;
     ctx.lineTo(getX(e), getY(e));
     ctx.stroke();
-  });
+  }, { passive: false });
 
-  canvas.addEventListener('pointerup', stopDraw);
-  canvas.addEventListener('pointercancel', stopDraw);
+  canvas.addEventListener('pointerup', (e) => {
+    e.preventDefault();
+    stopDraw();
+  }, { passive: false });
+
+  canvas.addEventListener('pointercancel', (e) => {
+    e.preventDefault();
+    stopDraw();
+  }, { passive: false });
 
   function stopDraw() {
     if (!drawing) return;
