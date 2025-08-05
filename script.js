@@ -20,8 +20,7 @@ document.addEventListener('DOMContentLoaded', function () {
     dpr = window.devicePixelRatio || 1;
     canvas.width = canvas.clientWidth * dpr;
     canvas.height = canvas.clientHeight * dpr;
-    ctx.setTransform(1, 0, 0, 1, 0, 0); // reset
-    ctx.scale(dpr, dpr);
+    ctx.setTransform(1, 0, 0, 1, 0, 0); // always keep reset
     loadCanvas();
   }
   window.addEventListener('resize', resizeCanvas);
@@ -61,7 +60,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function saveCanvas() {
     try {
-      // Save at full DPR resolution
       localStorage.setItem(getStorageKey(), canvas.toDataURL());
     } catch (e) {
       console.warn("Could not save canvas:", e);
@@ -73,12 +71,8 @@ document.addEventListener('DOMContentLoaded', function () {
     if (dataURL) {
       const img = new Image();
       img.onload = function () {
-        ctx.setTransform(1, 0, 0, 1, 0, 0); // reset scale
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        // draw image in full resolution
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        // restore DPR scaling for new strokes
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       };
       img.src = dataURL;
     } else {
@@ -87,9 +81,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function clearCanvas() {
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     localStorage.removeItem(getStorageKey());
   }
 
@@ -120,16 +112,16 @@ document.addEventListener('DOMContentLoaded', function () {
     saveCanvas();
   }
 
+  // ✅ Coordinates scaled manually by DPR
   function getX(e) {
-  const rect = canvas.getBoundingClientRect();
-  return e.clientX - rect.left;
-}
+    const rect = canvas.getBoundingClientRect();
+    return (e.clientX - rect.left) * dpr;
+  }
 
-function getY(e) {
-  const rect = canvas.getBoundingClientRect();
-  return e.clientY - rect.top;
-}
+  function getY(e) {
+    const rect = canvas.getBoundingClientRect();
+    return (e.clientY - rect.top) * dpr;
+  }
 
   loadCanvas(); // initial load
 });
-
