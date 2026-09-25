@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#140b2e" />
+<title>Evidence Quest</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@500;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg1: #140b2e;
+    --bg2: #2a0f4a;
+    --card: rgba(255, 255, 255, 0.07);
+    --card-solid: #221544;
+    --line: rgba(255, 255, 255, 0.14);
+    --text: #fbf7ff;
+    --muted: #c3b5e6;
+    --pink: #ff3d9a;
+    --lime: #c6ff3d;
+    --cyan: #34e7ff;
+    --gold: #ffd23d;
+    --good: #37f5a0;
+    --bad: #ff5a6e;
+    --radius: 22px;
+    --shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    --font-display: "Fredoka", ui-rounded, "SF Pro Rounded", system-ui, sans-serif;
+    --font-body: "Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  html, body { margin: 0; min-height: 100%; }
+
+  body {
+    background: var(--bg1);
+    background-image:
+      radial-gradient(900px 500px at 110% -10%, rgba(255, 61, 154, 0.35), transparent 60%),
+      radial-gradient(700px 500px at -20% 30%, rgba(52, 231, 255, 0.22), transparent 60%),
+      radial-gradient(800px 600px at 50% 120%, rgba(198, 255, 61, 0.16), transparent 60%),
+      linear-gradient(160deg, var(--bg1), var(--bg2));
+    background-attachment: fixed;
+    color: var(--text);
+    font-family: var(--font-body);
+    line-height: 1.45;
+    overflow-x: hidden;
+  }
+
+  /* floating blobs */
+  .blob {
+    position: fixed; z-index: 0; border-radius: 50%;
+    filter: blur(40px); opacity: .45; pointer-events: none;
+    animation: float 14s ease-in-out infinite;
+  }
+  .blob.b1 { width: 220px; height: 220px; background: var(--pink); top: 8%; left: -80px; }
+  .blob.b2 { width: 180px; height: 180px; background: var(--cyan); bottom: 10%; right: -60px; animation-delay: -5s; }
+  .blob.b3 { width: 140px; height: 140px; background: var(--lime); top: 55%; left: 40%; opacity: .18; animation-delay: -9s; }
+  @keyframes float {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(30px, -40px) scale(1.12); }
+  }
+
+  .app {
+    position: relative; z-index: 1;
+    max-width: 580px; margin: 0 auto;
+    padding: calc(14px + env(safe-area-inset-top)) 16px calc(120px + env(safe-area-inset-bottom));
+    min-height: 100vh; min-height: 100dvh;
+  }
+
+  h1, h2, h3, .display { font-family: var(--font-display); letter-spacing: .2px; margin: 0; }
+
+  /* ---------- HUD ---------- */
+  .hud {
+    position: sticky; top: 0; z-index: 5;
+    margin: 0 -16px; padding: 10px 16px 12px;
+    background: linear-gradient(to bottom, rgba(20, 11, 46, .92) 70%, rgba(20, 11, 46, 0));
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  .hud-row { display: flex; align-items: center; gap: 10px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 7px 12px; border-radius: 999px;
+    background: var(--card); border: 1px solid var(--line);
+    font-weight: 800; font-size: 14px; white-space: nowrap;
+  }
+  .chip .num { font-family: var(--font-display); font-size: 16px; }
+  .chip.streak.hot { border-color: var(--gold); box-shadow: 0 0 18px rgba(255, 210, 61, .45); }
+  .chip.bump { animation: bump .45s cubic-bezier(.3, 1.8, .5, 1); }
+  @keyframes bump { 40% { transform: scale(1.25); } }
+  .spacer { flex: 1; }
+
+  .progress {
+    margin-top: 10px; height: 12px; border-radius: 99px;
+    background: rgba(255, 255, 255, .08); overflow: hidden;
+    border: 1px solid var(--line);
+  }
+  .progress > span {
+    display: block; height: 100%; width: 0%;
+    background: linear-gradient(90deg, var(--cyan), var(--pink), var(--lime));
+    background-size: 200% 100%;
+    animation: shimmer 3s linear infinite;
+    border-radius: 99px;
+    transition: width .6s cubic-bezier(.2, .9, .3, 1.2);
+  }
+  @keyframes shimmer { to { background-position: -200% 0; } }
+
+  .dots { display: flex; gap: 6px; margin-top: 10px; justify-content: center; }
+  .dot {
+    width: 28px; height: 8px; border-radius: 99px;
+    background: rgba(255, 255, 255, .14); transition: all .3s;
+  }
+  .dot.current { background: var(--cyan); box-shadow: 0 0 12px var(--cyan); width: 40px; }
+  .dot.right { background: var(--good); }
+  .dot.wrong { background: var(--bad); }
+
+  /* ---------- Screens ---------- */
+  .screen { display: none; }
+  .screen.active { display: block; animation: pop-in .5s cubic-bezier(.2, .9, .3, 1.2); }
+  @keyframes pop-in { from { opacity: 0; transform: translateY(18px) scale(.98); } }
+
+  .card {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow);
+  }
+
+  /* intro */
+  .hero { text-align: center; padding-top: 28px; }
+  .hero .badge {
+    display: inline-block; font-weight: 800; font-size: 12px; letter-spacing: 1.5px;
+    text-transform: uppercase; color: var(--bg1); background: var(--lime);
+    padding: 6px 12px; border-radius: 99px; transform: rotate(-3deg);
+  }
+  .hero h1 {
+    font-size: clamp(40px, 12vw, 64px); line-height: 1; margin: 18px 0 10px;
+    background: linear-gradient(90deg, var(--cyan), var(--pink) 50%, var(--gold));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    filter: drop-shadow(0 4px 18px rgba(255, 61, 154, .35));
+  }
+  .hero .emoji { font-size: 64px; display: inline-block; animation: wobble 2.4s ease-in-out infinite; }
+  @keyframes wobble { 0%, 100% { transform: rotate(-8deg); } 50% { transform: rotate(8deg) scale(1.06); } }
+  .hero p { color: var(--muted); font-size: 17px; margin: 0 auto 22px; max-width: 420px; }
+
+  .toolkit { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; text-align: left; margin: 22px 0; }
+  .tool {
+    padding: 14px; border-radius: 18px; background: var(--card); border: 1px solid var(--line);
+    font-size: 14px; color: var(--muted);
+  }
+  .tool b { display: block; color: var(--text); font-family: var(--font-display); font-size: 16px; margin: 4px 0 2px; }
+  .tool .ico { font-size: 22px; }
+
+  /* question */
+  .q-meta { display: flex; align-items: center; gap: 8px; margin: 10px 0 12px; }
+  .q-type {
+    font-size: 12px; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase;
+    padding: 5px 10px; border-radius: 99px; color: var(--bg1); background: var(--cyan);
+  }
+  .q-type.verdict { background: var(--gold); }
+  .q-num { color: var(--muted); font-weight: 700; font-size: 14px; }
+
+  .claim {
+    position: relative; overflow: hidden;
+    background: linear-gradient(135deg, rgba(255, 61, 154, .22), rgba(52, 231, 255, .14));
+    border: 1px solid rgba(255, 61, 154, .45);
+  }
+  .claim .label { font-size: 12px; font-weight: 800; letter-spacing: 1.4px; text-transform: uppercase; color: var(--pink); }
+  .claim h2 { font-size: clamp(21px, 5.6vw, 26px); line-height: 1.2; margin-top: 6px; }
+  .claim::after {
+    content: "“"; position: absolute; right: 10px; top: -30px;
+    font-family: Georgia, serif; font-size: 150px; color: rgba(255, 255, 255, .07);
+  }
+
+  .prompt { margin: 18px 4px 10px; font-weight: 800; font-size: 16px; }
+
+  .evidence-quote {
+    margin-top: 12px; padding: 16px 18px; border-radius: 18px;
+    background: rgba(0, 0, 0, .22); border-left: 5px solid var(--gold);
+    font-size: 17px; font-weight: 700;
+  }
+
+  .options { display: grid; gap: 12px; }
+  .opt {
+    position: relative; width: 100%; text-align: left;
+    display: flex; gap: 12px; align-items: flex-start;
+    padding: 16px; min-height: 64px;
+    border-radius: 18px; border: 2px solid var(--line);
+    background: var(--card-solid); color: var(--text);
+    font: inherit; font-size: 16px; font-weight: 700; cursor: pointer;
+    box-shadow: 0 5px 0 rgba(0, 0, 0, .35);
+    transition: transform .15s, border-color .2s, box-shadow .15s, background .2s, opacity .3s;
+  }
+  .opt:hover:not(:disabled) { border-color: var(--cyan); transform: translateY(-2px); box-shadow: 0 7px 0 rgba(0, 0, 0, .35), 0 0 22px rgba(52, 231, 255, .25); }
+  .opt:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 2px 0 rgba(0, 0, 0, .35); }
+  .opt:focus-visible { outline: 3px solid var(--lime); outline-offset: 3px; }
+  .opt .key {
+    flex: none; width: 32px; height: 32px; border-radius: 10px;
+    display: grid; place-items: center;
+    background: rgba(255, 255, 255, .1); font-family: var(--font-display); font-size: 16px;
+  }
+  .opt .txt { flex: 1; padding-top: 4px; }
+  .opt:disabled { cursor: default; }
+  .opt.dim { opacity: .45; }
+  .opt.correct { border-color: var(--good); background: rgba(55, 245, 160, .14); box-shadow: 0 0 0 4px rgba(55, 245, 160, .18), 0 5px 0 rgba(0, 0, 0, .35); opacity: 1; }
+  .opt.correct .key { background: var(--good); color: var(--bg1); }
+  .opt.incorrect { border-color: var(--bad); background: rgba(255, 90, 110, .14); opacity: 1; }
+  .opt.incorrect .key { background: var(--bad); color: var(--bg1); }
+  .opt .why { display: none; font-weight: 600; font-size: 14px; color: var(--muted); margin-top: 6px; }
+  .opt.reveal .why { display: block; animation: pop-in .35s ease-out; }
+
+  .verdict-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .verdict-row .opt { flex-direction: column; align-items: center; text-align: center; font-family: var(--font-display); font-size: 22px; padding: 18px 10px; }
+  .verdict-row .opt .big { font-size: 38px; line-height: 1; }
+  .verdict-row .opt .why { text-align: left; font-family: var(--font-body); }
+
+  .shake { animation: shake .45s; }
+  @keyframes shake {
+    20% { transform: translateX(-9px) rotate(-1deg); }
+    40% { transform: translateX(8px) rotate(1deg); }
+    60% { transform: translateX(-5px); }
+    80% { transform: translateX(4px); }
+  }
+
+  /* feedback */
+  .feedback { margin-top: 16px; display: none; }
+  .feedback.show { display: block; animation: pop-in .45s cubic-bezier(.2, .9, .3, 1.3); }
+  .feedback .card { border-width: 2px; }
+  .feedback.good .card { border-color: var(--good); background: linear-gradient(135deg, rgba(55, 245, 160, .16), rgba(52, 231, 255, .08)); }
+  .feedback.bad .card { border-color: var(--bad); background: linear-gradient(135deg, rgba(255, 90, 110, .16), rgba(255, 61, 154, .08)); }
+  .fb-head { display: flex; align-items: center; gap: 10px; }
+  .fb-head .em { font-size: 34px; }
+  .fb-head h3 { font-size: 22px; }
+  .fb-body { margin: 10px 0 0; color: var(--text); font-size: 16px; }
+  .tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+  .tag {
+    font-size: 13px; font-weight: 800; padding: 6px 10px; border-radius: 99px;
+    border: 1px solid var(--line); background: rgba(0, 0, 0, .2);
+    opacity: 0; animation: tag-in .4s forwards;
+  }
+  .tag.yes { color: var(--good); border-color: rgba(55, 245, 160, .5); }
+  .tag.no { color: var(--bad); border-color: rgba(255, 90, 110, .5); text-decoration: line-through; text-decoration-thickness: 2px; }
+  @keyframes tag-in { from { opacity: 0; transform: scale(.6); } to { opacity: 1; transform: none; } }
+  .points-float {
+    position: fixed; z-index: 30; pointer-events: none;
+    font-family: var(--font-display); font-size: 30px; color: var(--lime);
+    text-shadow: 0 0 16px rgba(198, 255, 61, .8);
+    animation: float-up 1.1s ease-out forwards;
+  }
+  @keyframes float-up { from { opacity: 1; transform: translate(-50%, 0) scale(.8); } to { opacity: 0; transform: translate(-50%, -90px) scale(1.3); } }
+
+  /* bottom bar */
+  .bottom {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
+    padding: 14px 16px calc(14px + env(safe-area-inset-bottom));
+    background: linear-gradient(to top, rgba(20, 11, 46, .96) 60%, rgba(20, 11, 46, 0));
+    display: flex; justify-content: center;
+    transform: translateY(110%); visibility: hidden;
+    transition: transform .35s cubic-bezier(.2, .9, .3, 1.2), visibility 0s .35s;
+  }
+  .bottom.show { transform: none; visibility: visible; transition: transform .35s cubic-bezier(.2, .9, .3, 1.2); }
+  .btn {
+    width: 100%; max-width: 548px; border: 0; cursor: pointer;
+    font-family: var(--font-display); font-size: 20px; font-weight: 700;
+    padding: 17px 22px; border-radius: 18px; color: var(--bg1);
+    background: linear-gradient(90deg, var(--lime), var(--cyan));
+    box-shadow: 0 6px 0 #1a7f8f, 0 10px 30px rgba(52, 231, 255, .35);
+    transition: transform .12s, box-shadow .12s;
+  }
+  .btn:active { transform: translateY(4px); box-shadow: 0 2px 0 #1a7f8f; }
+  .btn:focus-visible { outline: 3px solid var(--pink); outline-offset: 3px; }
+  .btn.pink { background: linear-gradient(90deg, var(--pink), var(--gold)); box-shadow: 0 6px 0 #9c1d5c, 0 10px 30px rgba(255, 61, 154, .4); }
+  .btn.pink:active { box-shadow: 0 2px 0 #9c1d5c; }
+  .btn.ghost {
+    background: transparent; color: var(--text); border: 2px solid var(--line); box-shadow: none; font-size: 17px;
+  }
+  .hero .btn { max-width: 360px; }
+  .hint { color: var(--muted); font-size: 13px; margin-top: 12px; text-align: center; }
+
+  /* results */
+  .results { text-align: center; padding-top: 10px; }
+  .ring-wrap { position: relative; width: 200px; height: 200px; margin: 10px auto 6px; }
+  .ring-wrap svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+  .ring-bg { stroke: rgba(255, 255, 255, .1); }
+  .ring-fg { stroke: url(#grad); stroke-linecap: round; transition: stroke-dashoffset 1.6s cubic-bezier(.2, .9, .3, 1); }
+  .ring-label { position: absolute; inset: 0; display: grid; place-content: center; }
+  .ring-label .score { font-family: var(--font-display); font-size: 58px; line-height: 1; }
+  .ring-label .of { color: var(--muted); font-weight: 800; }
+  .rank {
+    display: inline-block; margin: 8px 0 6px; padding: 8px 16px; border-radius: 99px;
+    background: linear-gradient(90deg, var(--pink), var(--gold)); color: var(--bg1);
+    font-family: var(--font-display); font-size: 20px;
+    animation: bump .6s .8s both;
+  }
+  .results > p { color: var(--muted); margin: 6px auto 18px; max-width: 420px; }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 16px 0 22px; }
+  .stat { padding: 12px 6px; border-radius: 16px; background: var(--card); border: 1px solid var(--line); }
+  .stat .v { font-family: var(--font-display); font-size: 24px; }
+  .stat .k { font-size: 12px; color: var(--muted); font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
+
+  .review { text-align: left; display: grid; gap: 10px; margin-bottom: 22px; }
+  .review h3 { font-size: 20px; margin: 4px 4px 4px; }
+  details.rv {
+    border-radius: 18px; background: var(--card); border: 1px solid var(--line); overflow: hidden;
+  }
+  details.rv[open] { border-color: rgba(52, 231, 255, .5); }
+  details.rv summary {
+    list-style: none; cursor: pointer; padding: 14px 16px;
+    display: flex; gap: 12px; align-items: center; font-weight: 800;
+  }
+  details.rv summary::-webkit-details-marker { display: none; }
+  details.rv summary .res { flex: none; width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; font-size: 16px; }
+  details.rv.ok summary .res { background: var(--good); color: var(--bg1); }
+  details.rv.no summary .res { background: var(--bad); color: var(--bg1); }
+  details.rv summary .s-txt { flex: 1; font-size: 15px; }
+  details.rv summary .chev { transition: transform .25s; color: var(--muted); }
+  details.rv[open] summary .chev { transform: rotate(180deg); }
+  .rv-body { padding: 0 16px 16px; font-size: 15px; color: var(--muted); }
+  .rv-body b { color: var(--text); }
+  .rv-body .line { margin: 8px 0; }
+
+  .footnote { color: var(--muted); font-size: 12px; text-align: center; margin-top: 18px; opacity: .8; }
+  .stack { display: grid; gap: 12px; }
+
+  #confetti { position: fixed; inset: 0; z-index: 40; pointer-events: none; }
+
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  @media (min-width: 640px) {
+    .app { padding-top: 30px; }
+  }
+  @media (max-width: 360px) {
+    .toolkit { grid-template-columns: 1fr; }
+    .verdict-row .opt { font-size: 18px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .001s !important; animation-iteration-count: 1 !important; transition-duration: .001s !important; }
+  }
+</style>
+</head>
+<body>
+<div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div>
+<canvas id="confetti" aria-hidden="true"></canvas>
+
+<main class="app">
+  <!-- INTRO -->
+  <section class="screen active" id="intro" aria-labelledby="introTitle">
+    <div class="hero">
+      <span class="badge">6 rounds · ~5 min</span>
+      <div style="margin-top:18px"><span class="emoji" aria-hidden="true">🕵️</span></div>
+      <h1 id="introTitle">Evidence Quest</h1>
+      <p>Every claim needs backup, but not all backup is equal. Your job is to tell <b style="color:var(--lime)">strong</b> evidence from <b style="color:var(--bad)">weak</b> evidence.</p>
+
+      <div class="toolkit">
+        <div class="tool"><span class="ico">🎯</span><b>Relevant</b>Does it actually support the claim?</div>
+        <div class="tool"><span class="ico">🔢</span><b>Specific</b>Real numbers, facts, and details.</div>
+        <div class="tool"><span class="ico">🏛️</span><b>Credible</b>A trustworthy, unbiased source.</div>
+        <div class="tool"><span class="ico">📅</span><b>Current</b>Recent enough to still be true.</div>
+      </div>
+
+      <button class="btn pink" id="startBtn">Start the quest 🚀</button>
+      <p class="hint">Tip: on a keyboard, press 1, 2, 3 to answer and Enter to continue.</p>
+    </div>
+  </section>
+
+  <!-- QUIZ -->
+  <section class="screen" id="quiz" aria-label="Question">
+    <div class="hud">
+      <div class="hud-row">
+        <span class="chip" id="scoreChip" aria-label="Score">⭐ <span class="num" id="scoreNum">0</span></span>
+        <span class="chip streak" id="streakChip" aria-label="Streak">🔥 <span class="num" id="streakNum">0</span></span>
+        <span class="spacer"></span>
+        <span class="chip"><span class="num" id="qCounter">1/6</span></span>
+      </div>
+      <div class="progress" aria-hidden="true"><span id="progressBar"></span></div>
+      <div class="dots" id="dots" aria-hidden="true"></div>
+    </div>
+
+    <div id="qArea"></div>
+
+    <div class="feedback" id="feedback" role="status" aria-live="polite"></div>
+  </section>
+
+  <!-- RESULTS -->
+  <section class="screen" id="results" aria-labelledby="resTitle">
+    <div class="results">
+      <h2 id="resTitle" class="display" style="font-size:30px;margin-top:14px">Quest complete!</h2>
+      <div class="ring-wrap">
+        <svg viewBox="0 0 120 120" aria-hidden="true">
+          <defs>
+            <linearGradient id="grad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#34e7ff" />
+              <stop offset="50%" stop-color="#ff3d9a" />
+              <stop offset="100%" stop-color="#c6ff3d" />
+            </linearGradient>
+          </defs>
+          <circle class="ring-bg" cx="60" cy="60" r="52" fill="none" stroke-width="12" />
+          <circle class="ring-fg" id="ring" cx="60" cy="60" r="52" fill="none" stroke-width="12" />
+        </svg>
+        <div class="ring-label">
+          <span class="score" id="finalScore">0</span>
+          <span class="of">out of 6</span>
+        </div>
+      </div>
+      <div class="rank" id="rank">Evidence Rookie</div>
+      <p id="rankMsg"></p>
+
+      <div class="stats">
+        <div class="stat"><div class="v" id="stPoints">0</div><div class="k">Points</div></div>
+        <div class="stat"><div class="v" id="stStreak">0</div><div class="k">Best streak</div></div>
+        <div class="stat"><div class="v" id="stAcc">0%</div><div class="k">Accuracy</div></div>
+      </div>
+
+      <div class="review" id="review"></div>
+
+      <div class="stack">
+        <button class="btn pink" id="againBtn">Play again 🔁</button>
+      </div>
+      <p class="footnote">All claims, studies, and numbers here are made up for practice.</p>
+    </div>
+  </section>
+</main>
+
+<div class="bottom" id="bottomBar">
+  <button class="btn" id="nextBtn">Next question →</button>
+</div>
+
+<script>
+(() => {
+  // Tags describe the four evidence checks: relevant, specific, credible, current.
+  const T = {
+    rel: "🎯 Relevant", spec: "🔢 Specific", cred: "🏛️ Credible", cur: "📅 Current",
+  };
+
+  const QUESTIONS = [
+    {
+      type: "pick",
+      claim: "High schools should start class later in the morning.",
+      prompt: "Which evidence supports this claim best?",
+      options: [
+        { text: "A sleep study of 9,000 students across 8 high schools found that after start times moved to 8:30 a.m., students slept about an hour more and tardiness dropped.",
+          correct: true,
+          why: "Large sample, specific numbers, and a direct link to the claim.",
+          tags: { rel: 1, spec: 1, cred: 1, cur: 1 } },
+        { text: "My cousin says he's always exhausted in first period.",
+          why: "One person's experience (an anecdote) doesn't prove anything about all students.",
+          tags: { rel: 1, spec: 0, cred: 0 } },
+        { text: "Everyone knows teenagers love sleeping in.",
+          why: "\"Everyone knows\" is a sweeping generalization with no proof behind it.",
+          tags: { rel: 1, spec: 0, cred: 0 } },
+      ],
+      lesson: "Strong evidence comes from many people, not just one, and it gives measurable results.",
+    },
+    {
+      type: "verdict",
+      claim: "Our town needs a protected bike lane on Main Street.",
+      evidence: "A city traffic survey counted about 1,200 cyclists a day on Main Street last month, and police reported 14 bike crashes there last year.",
+      answer: "strong",
+      why: "It comes from official sources (the city and the police), it's recent, and it gives specific numbers tied directly to Main Street.",
+      tags: { rel: 1, spec: 1, cred: 1, cur: 1 },
+      lesson: "Official data about the exact place or issue in the claim is hard to argue with.",
+    },
+    {
+      type: "pick",
+      claim: "Playing strategy video games can improve problem-solving skills.",
+      prompt: "Which evidence is the strongest?",
+      options: [
+        { text: "A video game company's ad says its games \"make kids smarter.\"",
+          why: "The company profits if you believe it. That's a biased source.",
+          tags: { rel: 1, spec: 0, cred: 0 } },
+        { text: "A peer-reviewed study of 200 students found that those who played strategy games for 6 weeks scored 12% higher on puzzle tests than those who didn't.",
+          correct: true,
+          why: "It's peer-reviewed, has a comparison group, and gives a measurable result.",
+          tags: { rel: 1, spec: 1, cred: 1, cur: 1 } },
+        { text: "I beat a really hard level last night, so games definitely made me a better thinker.",
+          why: "One personal win isn't proof, and it doesn't show the game caused the improvement.",
+          tags: { rel: 1, spec: 0, cred: 0 } },
+      ],
+      lesson: "Always ask who is behind the evidence and what they gain if you believe it.",
+    },
+    {
+      type: "verdict",
+      claim: "The school cafeteria food is unhealthy.",
+      evidence: "The food looks gross and honestly tastes terrible.",
+      answer: "weak",
+      why: "\"Gross\" and \"terrible\" are opinions about taste, not facts about health. Nutrition facts like calories, sugar, or sodium would be strong evidence.",
+      tags: { rel: 0, spec: 0, cred: 0 },
+      lesson: "Opinions and feelings aren't evidence. Look for facts you can measure.",
+    },
+    {
+      type: "pick",
+      claim: "Reading for fun helps kids build a bigger vocabulary.",
+      prompt: "Which evidence supports this claim best?",
+      options: [
+        { text: "A famous movie star said in an interview that reading changed her life.",
+          why: "Being famous doesn't make someone an expert. This is an appeal to celebrity.",
+          tags: { rel: 1, spec: 0, cred: 0 } },
+        { text: "Books are awesome, so of course they help your vocabulary.",
+          why: "This is circular reasoning: it just repeats the claim with no proof.",
+          tags: { rel: 1, spec: 0, cred: 0 } },
+        { text: "Researchers who followed 3,000 kids for 5 years found daily readers learned about 50% more new words than kids who rarely read.",
+          correct: true,
+          why: "Long-term research with lots of kids and a clear, measurable comparison.",
+          tags: { rel: 1, spec: 1, cred: 1, cur: 1 } },
+      ],
+      lesson: "Research that follows many people over time beats famous opinions.",
+    },
+    {
+      type: "pick",
+      claim: "Our school's new recycling program is reducing waste.",
+      prompt: "Pick the strongest evidence.",
+      options: [
+        { text: "A poll from 1998 showed most Americans like the idea of recycling.",
+          why: "It's outdated, and liking recycling doesn't show that this program reduces waste.",
+          tags: { rel: 0, spec: 1, cred: 1, cur: 0 } },
+        { text: "Custodial staff records show trash went from 40 bags a week to 25 bags a week after the recycling bins were added this fall.",
+          correct: true,
+          why: "Recent, specific before-and-after numbers about this exact program.",
+          tags: { rel: 1, spec: 1, cred: 1, cur: 1 } },
+        { text: "The new recycling bins are bright blue and look really nice in the hallway.",
+          why: "True, maybe, but how the bins look has nothing to do with reducing waste. It's irrelevant.",
+          tags: { rel: 0, spec: 0 } },
+      ],
+      lesson: "Evidence must be relevant. A true fact that doesn't connect to the claim is still weak.",
+    },
+  ];
+
+  // ---------- helpers ----------
+  const $ = (s) => document.querySelector(s);
+  const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
+  const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const shuffle = (a) => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+  const buzz = (p) => { try { navigator.vibrate && navigator.vibrate(p); } catch (_) {} };
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  const screens = { intro: $("#intro"), quiz: $("#quiz"), results: $("#results") };
+  const bottomBar = $("#bottomBar");
+  const nextBtn = $("#nextBtn");
+
+  let state;
+
+  function show(name) {
+    Object.values(screens).forEach((s) => s.classList.remove("active"));
+    screens[name].classList.add("active");
+    window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
+  }
+
+  function bump(node) { node.classList.remove("bump"); void node.offsetWidth; node.classList.add("bump"); }
+
+  function renderTags(tags) {
+    return Object.keys(T)
+      .filter((k) => k in tags)
+      .map((k, i) => `<span class="tag ${tags[k] ? "yes" : "no"}" style="animation-delay:${0.15 + i * 0.1}s">${T[k]}</span>`)
+      .join("");
+  }
+
+  // ---------- game flow ----------
+  function start() {
+    state = {
+      i: 0, score: 0, points: 0, streak: 0, best: 0,
+      results: [],
+      order: QUESTIONS.map((q) => (q.type === "pick" ? shuffle(q.options) : null)),
+    };
+    $("#scoreNum").textContent = "0";
+    $("#streakNum").textContent = "0";
+    $("#streakChip").classList.remove("hot");
+    const dots = $("#dots"); dots.innerHTML = "";
+    QUESTIONS.forEach(() => dots.appendChild(el("span", "dot")));
+    show("quiz");
+    renderQuestion();
+  }
+
+  function renderQuestion() {
+    const q = QUESTIONS[state.i];
+    const n = QUESTIONS.length;
+    $("#qCounter").textContent = `${state.i + 1}/${n}`;
+    $("#progressBar").style.width = `${(state.i / n) * 100}%`;
+    [...$("#dots").children].forEach((d, k) => d.classList.toggle("current", k === state.i));
+
+    const fb = $("#feedback"); fb.className = "feedback"; fb.innerHTML = "";
+    bottomBar.classList.remove("show");
+
+    const area = $("#qArea"); area.innerHTML = "";
+    const meta = el("div", "q-meta");
+    meta.appendChild(el("span", "q-type" + (q.type === "verdict" ? " verdict" : ""), q.type === "verdict" ? "⚖️ Strong or weak?" : "🔍 Pick the strongest"));
+    meta.appendChild(el("span", "q-num", `Round ${state.i + 1}`));
+    area.appendChild(meta);
+
+    const claim = el("div", "card claim");
+    claim.innerHTML = `<div class="label">The claim</div><h2>${esc(q.claim)}</h2>`;
+    area.appendChild(claim);
+
+    if (q.type === "pick") {
+      area.appendChild(el("div", "prompt", esc(q.prompt)));
+      const list = el("div", "options");
+      state.order[state.i].forEach((opt, k) => {
+        const b = el("button", "opt");
+        b.type = "button";
+        b.innerHTML = `<span class="key">${k + 1}</span><span class="txt">${esc(opt.text)}<span class="why">${esc(opt.why)}</span></span>`;
+        b.addEventListener("click", () => answerPick(k, b));
+        list.appendChild(b);
+      });
+      area.appendChild(list);
+    } else {
+      area.appendChild(el("div", "prompt", "Is this evidence strong or weak?"));
+      area.appendChild(el("div", "evidence-quote", esc(q.evidence)));
+      const row = el("div", "verdict-row");
+      row.style.marginTop = "14px";
+      [["strong", "💪", "Strong"], ["weak", "🥴", "Weak"]].forEach(([val, emo, label], k) => {
+        const b = el("button", "opt");
+        b.type = "button";
+        b.dataset.val = val;
+        b.innerHTML = `<span class="big" aria-hidden="true">${emo}</span><span>${label}</span><span class="sr"> (press ${k + 1})</span>`;
+        b.addEventListener("click", () => answerVerdict(val, b));
+        row.appendChild(b);
+      });
+      area.appendChild(row);
+    }
+  }
+
+  function lockButtons() { document.querySelectorAll("#qArea .opt").forEach((b) => (b.disabled = true)); }
+
+  function answerPick(k, btn) {
+    if (state.locked) return;
+    state.locked = true;
+    const q = QUESTIONS[state.i];
+    const opts = state.order[state.i];
+    const chosen = opts[k];
+    const correctOpt = opts.find((o) => o.correct);
+    const buttons = [...document.querySelectorAll("#qArea .opt")];
+    lockButtons();
+    buttons.forEach((b, j) => {
+      b.classList.add("reveal");
+      if (opts[j].correct) b.classList.add("correct");
+      else if (j === k) b.classList.add("incorrect");
+      else b.classList.add("dim");
+    });
+    const ok = !!chosen.correct;
+    finish(ok, btn, {
+      title: ok ? pick(["Nailed it!", "Sharp eye!", "Detective mode!", "Boom, correct!"]) : "Not quite!",
+      body: ok ? correctOpt.why : `You picked weak evidence. ${chosen.why} The strongest option: ${correctOpt.why.charAt(0).toLowerCase() + correctOpt.why.slice(1)}`,
+      tags: correctOpt.tags,
+      lesson: q.lesson,
+      chosenText: chosen.text,
+      correctText: correctOpt.text,
+      chosenWhy: ok ? "" : chosen.why,
+      reviewWhy: correctOpt.why,
+    });
+  }
+
+  function answerVerdict(val, btn) {
+    if (state.locked) return;
+    state.locked = true;
+    const q = QUESTIONS[state.i];
+    const ok = val === q.answer;
+    lockButtons();
+    document.querySelectorAll("#qArea .opt").forEach((b) => {
+      if (b.dataset.val === q.answer) b.classList.add("correct");
+      else if (b === btn) b.classList.add("incorrect");
+      else b.classList.add("dim");
+    });
+    finish(ok, btn, {
+      title: ok ? pick(["You got it!", "Spot on!", "Evidence expert!"]) : "Oops, not this time!",
+      body: `This evidence is <b>${q.answer.toUpperCase()}</b>. ${esc(q.why)}`,
+      bodyIsHtml: true,
+      tags: q.tags,
+      lesson: q.lesson,
+      reviewWhy: q.why,
+      chosenText: val === "strong" ? "Strong" : "Weak",
+      correctText: q.answer === "strong" ? "Strong" : "Weak",
+    });
+  }
+
+  function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
+
+  function finish(ok, btn, info) {
+    const q = QUESTIONS[state.i];
+    let gained = 0;
+    if (ok) {
+      state.score++;
+      state.streak++;
+      state.best = Math.max(state.best, state.streak);
+      gained = 100 + (state.streak - 1) * 25;
+      state.points += gained;
+      buzz(30);
+      burst(btn);
+      floatPoints(btn, `+${gained}`);
+    } else {
+      state.streak = 0;
+      buzz([60, 40, 60]);
+      const target = btn.closest(".options, .verdict-row") || btn;
+      target.classList.remove("shake"); void target.offsetWidth; target.classList.add("shake");
+    }
+
+    $("#scoreNum").textContent = state.points;
+    $("#streakNum").textContent = state.streak;
+    bump($("#scoreChip"));
+    if (ok) bump($("#streakChip"));
+    $("#streakChip").classList.toggle("hot", state.streak >= 2);
+
+    const dot = $("#dots").children[state.i];
+    dot.classList.remove("current");
+    dot.classList.add(ok ? "right" : "wrong");
+    $("#progressBar").style.width = `${((state.i + 1) / QUESTIONS.length) * 100}%`;
+
+    state.results.push({ ok, claim: q.claim, lesson: info.lesson, chosen: info.chosenText, correct: info.correctText, why: info.reviewWhy, chosenWhy: info.chosenWhy || "", type: q.type });
+
+    const fb = $("#feedback");
+    fb.className = "feedback show " + (ok ? "good" : "bad");
+    const streakNote = ok && state.streak >= 2 ? ` <span style="color:var(--gold)">🔥 ${state.streak} in a row!</span>` : "";
+    fb.innerHTML = `
+      <div class="card">
+        <div class="fb-head"><span class="em" aria-hidden="true">${ok ? "🎉" : "🤔"}</span><h3>${info.title}${streakNote}</h3></div>
+        <p class="fb-body">${info.bodyIsHtml ? info.body : esc(info.body)}</p>
+        <div class="tags" aria-label="Evidence checklist">${renderTags(info.tags)}</div>
+        <p class="fb-body" style="color:var(--muted);font-size:14px;margin-top:12px">💡 ${esc(info.lesson)}</p>
+      </div>`;
+
+    const last = state.i === QUESTIONS.length - 1;
+    nextBtn.textContent = last ? "See my score 🏆" : "Next question →";
+    bottomBar.classList.add("show");
+    setTimeout(() => {
+      fb.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "nearest" });
+      nextBtn.focus({ preventScroll: true });
+    }, 250);
+  }
+
+  function next() {
+    if (!state || !state.locked) return;
+    state.locked = false;
+    if (state.i < QUESTIONS.length - 1) {
+      state.i++;
+      renderQuestion();
+      window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
+    } else {
+      bottomBar.classList.remove("show");
+      showResults();
+    }
+  }
+
+  function showResults() {
+    show("results");
+    const n = QUESTIONS.length;
+    const s = state.score;
+    const ring = $("#ring");
+    const C = 2 * Math.PI * 52;
+    ring.style.strokeDasharray = C;
+    ring.style.strokeDashoffset = C;
+    requestAnimationFrame(() => requestAnimationFrame(() => { ring.style.strokeDashoffset = C * (1 - s / n); }));
+    countUp($("#finalScore"), s, 1200);
+    countUp($("#stPoints"), state.points, 1200);
+    $("#stStreak").textContent = state.best;
+    $("#stAcc").textContent = Math.round((s / n) * 100) + "%";
+
+    const ranks = [
+      [6, "🏆 Evidence Legend", "Perfect score! You can spot weak evidence from a mile away."],
+      [5, "🕵️ Master Detective", "So close to perfect. Your evidence radar is seriously strong."],
+      [4, "🔎 Sharp Investigator", "Solid work! Review the misses below to level up even more."],
+      [2, "🧩 Clue Collector", "You're getting there. Check the four evidence checks and try again!"],
+      [0, "🌱 Evidence Rookie", "Every detective starts somewhere. Read the explanations below, then give it another go!"],
+    ];
+    const [, title, msg] = ranks.find(([min]) => s >= min);
+    $("#rank").textContent = title;
+    $("#rankMsg").textContent = msg;
+
+    const rv = $("#review");
+    rv.innerHTML = "<h3>Round by round</h3>";
+    state.results.forEach((r, k) => {
+      const d = el("details", "rv " + (r.ok ? "ok" : "no"));
+      d.innerHTML = `
+        <summary>
+          <span class="res" aria-hidden="true">${r.ok ? "✓" : "✗"}</span>
+          <span class="s-txt">${k + 1}. ${esc(r.claim)}<span class="sr">, ${r.ok ? "correct" : "incorrect"}</span></span>
+          <span class="chev" aria-hidden="true">▾</span>
+        </summary>
+        <div class="rv-body">
+          ${r.ok ? "" : `<div class="line">❌ <b>Your answer:</b> ${esc(r.chosen)}${r.chosenWhy ? ` <i>(${esc(r.chosenWhy)})</i>` : ""}</div>`}
+          <div class="line">✅ <b>${r.type === "verdict" ? "Answer" : "Strongest evidence"}:</b> ${esc(r.correct)}</div>
+          <div class="line">🧠 <b>Why:</b> ${esc(r.why)}</div>
+          <div class="line">💡 ${esc(r.lesson)}</div>
+        </div>`;
+      if (!r.ok) d.open = true;
+      rv.appendChild(d);
+    });
+
+    if (s >= 4) setTimeout(() => celebrate(s === n ? 260 : 140), 500);
+  }
+
+  function countUp(node, to, ms) {
+    if (reduceMotion) { node.textContent = to; return; }
+    const t0 = performance.now();
+    const tick = (t) => {
+      const p = Math.min(1, (t - t0) / ms);
+      node.textContent = Math.round(to * (1 - Math.pow(1 - p, 3)));
+      if (p < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }
+
+  function floatPoints(anchor, text) {
+    const r = anchor.getBoundingClientRect();
+    const f = el("div", "points-float", text);
+    f.style.left = r.left + r.width / 2 + "px";
+    f.style.top = r.top + "px";
+    document.body.appendChild(f);
+    setTimeout(() => f.remove(), 1200);
+  }
+
+  // ---------- confetti ----------
+  const canvas = $("#confetti");
+  const ctx = canvas.getContext("2d");
+  let parts = [];
+  let raf = null;
+  const COLORS = ["#ff3d9a", "#34e7ff", "#c6ff3d", "#ffd23d", "#ffffff", "#a86bff"];
+
+  function resize() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = innerWidth * dpr; canvas.height = innerHeight * dpr;
+    canvas.style.width = innerWidth + "px"; canvas.style.height = innerHeight + "px";
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  resize();
+  addEventListener("resize", resize);
+
+  function spawn(x, y, count, spread, power) {
+    if (reduceMotion) return;
+    for (let i = 0; i < count; i++) {
+      const a = -Math.PI / 2 + (Math.random() - 0.5) * spread;
+      const v = power * (0.5 + Math.random());
+      parts.push({
+        x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v,
+        w: 6 + Math.random() * 6, h: 8 + Math.random() * 8,
+        r: Math.random() * Math.PI, vr: (Math.random() - 0.5) * 0.3,
+        c: COLORS[(Math.random() * COLORS.length) | 0], life: 0,
+        shape: Math.random() < 0.3 ? "circle" : "rect",
+      });
+    }
+    if (!raf) raf = requestAnimationFrame(loop);
+  }
+
+  function loop() {
+    ctx.clearRect(0, 0, innerWidth, innerHeight);
+    parts = parts.filter((p) => p.life < 180 && p.y < innerHeight + 40);
+    for (const p of parts) {
+      p.life++; p.vy += 0.25; p.vx *= 0.99; p.x += p.vx; p.y += p.vy; p.r += p.vr;
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, 1 - p.life / 180);
+      ctx.translate(p.x, p.y); ctx.rotate(p.r); ctx.fillStyle = p.c;
+      if (p.shape === "circle") { ctx.beginPath(); ctx.arc(0, 0, p.w / 2, 0, Math.PI * 2); ctx.fill(); }
+      else ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h * Math.abs(Math.cos(p.r)));
+      ctx.restore();
+    }
+    raf = parts.length ? requestAnimationFrame(loop) : null;
+    if (!raf) ctx.clearRect(0, 0, innerWidth, innerHeight);
+  }
+
+  function burst(node) {
+    const r = node.getBoundingClientRect();
+    spawn(r.left + r.width / 2, r.top + r.height / 2, 60, Math.PI * 1.1, 11);
+  }
+
+  function celebrate(total) {
+    spawn(innerWidth * 0.15, innerHeight, total / 2, 0.9, 20);
+    spawn(innerWidth * 0.85, innerHeight, total / 2, 0.9, 20);
+  }
+
+  // ---------- events ----------
+  $("#startBtn").addEventListener("click", start);
+  $("#againBtn").addEventListener("click", start);
+  nextBtn.addEventListener("click", next);
+
+  document.addEventListener("keydown", (e) => {
+    if (!screens.quiz.classList.contains("active")) return;
+    if (state && state.locked) {
+      if (e.key === "Enter" && document.activeElement !== nextBtn) { e.preventDefault(); next(); }
+      return;
+    }
+    const n = parseInt(e.key, 10);
+    if (!isNaN(n)) {
+      const btns = document.querySelectorAll("#qArea .opt");
+      if (btns[n - 1]) btns[n - 1].click();
+    }
+  });
+})();
+</script>
+</body>
+</html>
